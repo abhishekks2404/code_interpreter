@@ -5,16 +5,14 @@ from codeinterpreterapi import CodeInterpreterSession, File
 import uuid
 from dotenv import load_dotenv
 
-load_dotenv()
+# load_dotenv()
 
 
-
-
-deployment_name: str = "gpt-3.5-turbo-16k"
-openai_api_type: str = "azure"
-openai_api_base: str = os.getenv("OPENAI_ENDPOINT")
-openai_api_version: str = "2023-03-15-preview"
-openai_api_key: str = os.getenv("OPENAI_API_KEY_BC")
+# deployment_name: str = "gpt-3.5-turbo-16k"
+# openai_api_type: str = "azure"
+# openai_api_base: str = os.getenv("OPENAI_ENDPOINT")
+# openai_api_version: str = "2023-03-15-preview"
+# openai_api_key: str = st.secrets["OPENAI_API_KEY"]
 
 # Set verbose mode to display more information
 os.environ["VERBOSE"] = "True"
@@ -59,7 +57,7 @@ def main():
     
                     
  
-    if prompt := st.chat_input("Ask me anything"):
+    if prompt :=  st.chat_input("Ask me anything"):
             st.chat_message("user").markdown(prompt)
             st.session_state.messages.append({"role": "user", "content": prompt})
             async def run_code_interpreter():
