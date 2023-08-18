@@ -100,7 +100,7 @@ class File(BaseModel):
     def __repr__(self):
         return f"File(name={self.name})"
 
-openai_api_key: str = st.secrets["OPENAI_API_KEY"]
+# openai_api_key: str = st.secrets["OPENAI_API_KEY"]
 
 # Set verbose mode to display more information
 os.environ["VERBOSE"] = "True"
