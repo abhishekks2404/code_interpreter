@@ -4,7 +4,7 @@ import streamlit as st
 from codeinterpreterapi import CodeInterpreterSession, File
 import uuid
 from dotenv import load_dotenv
-
+from pydantic import BaseModel
 # load_dotenv()
 
 
@@ -12,11 +12,11 @@ from dotenv import load_dotenv
 # openai_api_type: str = "azure"
 # openai_api_base: str = os.getenv("OPENAI_ENDPOINT")
 # openai_api_version: str = "2023-03-15-preview"
-
-@classmethod
-def from_bytes(cls, name: str, content: bytes):
-        return cls(name=name, content=content)
-openai_api_key: str = st.secrets["OPENAI_API_KEY"]
+class files(BaseModel):
+    @classmethod
+    def from_bytes(cls, name: str, content: bytes):
+            return cls(name=name, content=content)
+# openai_api_key: str = st.secrets["OPENAI_API_KEY"]
 
 # Set verbose mode to display more information
 os.environ["VERBOSE"] = "True"
@@ -38,7 +38,7 @@ def main():
         uploaded_files_list = []
         for uploaded_file in uploaded_files:
             bytes_data = uploaded_file.read()
-            uploaded_files_list.append(from_bytes(name=uploaded_file.name,
+            uploaded_files_list.append(files.from_bytes(name=uploaded_file.name,
                                                 content=bytes_data))
             
         if st.session_state.images:
