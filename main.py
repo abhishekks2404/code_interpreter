@@ -1,7 +1,7 @@
 import os
 import asyncio
 import streamlit as st
-from codeinterpreterapi import CodeInterpreterSession, File
+from codeinterpreterapi import CodeInterpreterSession
 import uuid
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -12,11 +12,95 @@ from pydantic import BaseModel
 # openai_api_type: str = "azure"
 # openai_api_base: str = os.getenv("OPENAI_ENDPOINT")
 # openai_api_version: str = "2023-03-15-preview"
-class files(BaseModel):
+class File(BaseModel):
+    name: str
+    content: bytes
+
+    @classmethod
+    def from_path(cls, path: str):
+        if not path.startswith("/"):
+            path = f"./{path}"
+        with open(path, "rb") as f:
+            path = path.split("/")[-1]
+            return cls(name=path, content=f.read())
+        
     @classmethod
     def from_bytes(cls, name: str, content: bytes):
-            return cls(name=name, content=content)
-# openai_api_key: str = st.secrets["OPENAI_API_KEY"]
+        return cls(name=name, content=content)
+
+    @classmethod
+    async def afrom_path(cls, path: str):
+        return await asyncio.to_thread(cls.from_path, path)
+
+    @classmethod
+    def from_url(cls, url: str):
+        import requests  # type: ignore
+
+        r = requests.get(url)
+        return cls(name=url.split("/")[-1], content=r.content)
+
+    @classmethod
+    async def afrom_url(cls, url: str):
+        import aiohttp
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as r:
+                return cls(name=url.split("/")[-1], content=await r.read())
+
+    def save(self, path: str):
+        if not path.startswith("/"):
+            path = f"./{path}"
+        with open(path, "wb") as f:
+            f.write(self.content)
+
+    async def asave(self, path: str):
+        await asyncio.to_thread(self.save, path)
+
+    def get_image(self):
+        try:
+            from PIL import Image  # type: ignore
+        except ImportError:
+            print(
+                "Please install it with "
+                "`pip install 'codeinterpreterapi[image_support]'`"
+                " to display images."
+            )
+            exit(1)
+
+        from io import BytesIO
+
+        img_io = BytesIO(self.content)
+        img = Image.open(img_io)
+
+        # Convert image to RGB if it's not
+        if img.mode not in ("RGB", "L"):  # L is for greyscale images
+            img = img.convert("RGB")
+
+        return img
+
+    def show_image(self):
+        img = self.get_image()
+        # Display the image
+        try:
+            # Try to get the IPython shell if available.
+            shell = get_ipython().__class__.__name__  # type: ignore
+            # If the shell is in a Jupyter notebook or similar.
+            if shell == "ZMQInteractiveShell" or shell == "Shell":
+                from IPython.display import display  # type: ignore
+
+                display(img)
+            else:
+                img.show()
+        except NameError:
+            img.show()
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return f"File(name={self.name})"
+
+openai_api_key: str = st.secrets["OPENAI_API_KEY"]
 
 # Set verbose mode to display more information
 os.environ["VERBOSE"] = "True"
@@ -38,7 +122,7 @@ def main():
         uploaded_files_list = []
         for uploaded_file in uploaded_files:
             bytes_data = uploaded_file.read()
-            uploaded_files_list.append(files.from_bytes(name=uploaded_file.name,
+            uploaded_files_list.append(File.from_bytes(name=uploaded_file.name,
                                                 content=bytes_data))
             
         if st.session_state.images:
