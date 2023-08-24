@@ -5,6 +5,12 @@ from codeinterpreterapi import CodeInterpreterSession
 import uuid
 from dotenv import load_dotenv
 from pydantic import BaseModel
+from langchain.chat_models import ChatOpenAI
+from langchain.schema import SystemMessage
+from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate, MessagesPlaceholder
+from langchain.memory import ConversationBufferMemory
+import openpyxl
+
 # load_dotenv()
 
 
@@ -100,7 +106,11 @@ class File(BaseModel):
     def __repr__(self):
         return f"File(name={self.name})"
 
-# openai_api_key: str = st.secrets["OPENAI_API_KEY"]
+openai_api_key: str = st.secrets["OPENAI_API_KEY"]
+if "memory" not in st.session_state:
+                        
+    st.session_state.memory = ConversationBufferMemory()
+
 
 # Set verbose mode to display more information
 os.environ["VERBOSE"] = "True"
@@ -117,7 +127,7 @@ def main():
 
     with st.sidebar:
         st.subheader("Upload File to Chat")
-        uploaded_files = st.file_uploader("Choose a file", accept_multiple_files=True,type=[".csv",".txt",".py",".json"])
+        uploaded_files = st.file_uploader("Choose a file", accept_multiple_files=True,type=[".jpg",".png",".xlsx",".csv",".txt",".py",".json"])
 
         uploaded_files_list = []
         for uploaded_file in uploaded_files:
@@ -148,11 +158,19 @@ def main():
     if prompt :=  st.chat_input("Ask me anything"):
             st.chat_message("user").markdown(prompt)
             st.session_state.messages.append({"role": "user", "content": prompt})
+            st.session_state.memory.save_context({"input": prompt},{"output": ""})
             async def run_code_interpreter():
                 with st.spinner("Thinking..."):
                 
                     async with CodeInterpreterSession(model='gpt-3.5-turbo-16k') as session:
-                        response = await session.generate_response(prompt, files=uploaded_files_list)
+                        p = st.session_state.memory.load_memory_variables({prompt})
+                        p=str(p)
+                        print(p)
+                        response = await session.generate_response(prompt + " = this is current prompt." +"\n"+ p +" = is the history", files=uploaded_files_list)
+
+
+                        st.session_state.memory.save_context({"input": prompt},{"output": response.content})
+                        # print(CodeInterpreterSession._history_backend)
                 
                         
                         st.chat_message("assistant").markdown(response.content)
@@ -168,28 +186,6 @@ def main():
                     st.session_state.messages.append({"role": "assistant", "content": response.content})
             asyncio.run(run_code_interpreter())
         
-    # User input for the prompt
-    #prompt = st.text_input("Enter Prompt")
-    
-
-    # Button to submit the request
-    #button = st.button("Submit")
-
-    # Check if the button was clicked
-    # if button and prompt:
-    #     async def run_code_interpreter():
-    #         async with CodeInterpreterSession(model='gpt-3.5-turbo-16k') as session:
-    #             response = await session.generate_response(prompt, files=uploaded_files_list)
-                
-    #             st.write("AI Output:")
-    #             st.write(response.content)
-                
-    #             for file in response.files:
-    #                 # Display the image content as bytes
-    #                 st.image(file.content,use_column_width=True, caption=file.name)
-                    
-    #     # Run the asyncio event loop
-    #     asyncio.run(run_code_interpreter())
 
 if __name__ == "__main__":
     with open("style.css") as source_des:
