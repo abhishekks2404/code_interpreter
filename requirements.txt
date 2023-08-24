@@ -148,3 +148,4 @@ websockets==11.0.3
 yarl==1.9.2
 yfinance==0.2.27
 zipp==3.16.2
+openpyxl
