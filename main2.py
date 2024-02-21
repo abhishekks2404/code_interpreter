@@ -106,7 +106,7 @@ class File(BaseModel):
     def __repr__(self):
         return f"File(name={self.name})"
 
-# openai_api_key: str = st.secrets["OPENAI_API_KEY"]
+openai_api_key: str = st.secrets["OPENAI_API_KEY"]
 if "memory" not in st.session_state:
                         
     st.session_state.memory = ConversationBufferMemory()
